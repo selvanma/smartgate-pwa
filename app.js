@@ -3,7 +3,7 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(err => console.log("SW register fail", err));
 }
 
-const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbxbqwOf2uEpPdVxg9RZdqg9CHXbavNYUVyURa2WFkitdpy4SG5bMAVUSn5Jmt7P9wbn/exec";
+const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbzAHoe2tIr1tuqLSljU9FfRy0CU95wudNvxAt5zhh0HeQAY3Qz1ZDsG5Y-Q5mwj57un/exec";
 let audioCtx = null;
 
 document.getElementById('activate-audio-btn').addEventListener('click', () => {
