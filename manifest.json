@@ -1,0 +1,21 @@
+{
+  "short_name": "SmartGate",
+  "name": "Ramky Utsav SmartGate Intercom",
+  "icons": [
+    {
+      "src": "https://img.icons8.com/color/192/security-checked.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://img.icons8.com/color/512/security-checked.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "index.html",
+  "background_color": "#121212",
+  "theme_color": "#27ae60",
+  "display": "standalone",
+  "orientation": "portrait"
+}
