@@ -3,7 +3,7 @@ if ('serviceWorker' in navigator) {
 }
 
 // PASTE YOUR LIVE SNAPSHOT GOOGLE WEB APP URL EXTRACTED FROM MANAGE DEPLOYMENTS BELOW
-const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbwC49QKfb8pXZ784XNEVVZQjO2V-xb3vN8-2v7Q0VSrWQNuK4K2cpXp107k3yxRZXE/exec";
+const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbzHr-mvCK1MTysSKPtFragDbOgnW65HS5NQS4I4GXOCraAVs0qTg2bAIJCaS5xsaESy/exec";
 let audioCtx = null;
 let currentActiveCount = 0;
 
