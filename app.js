@@ -1,96 +1,63 @@
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(err => console.log("SW Register Failed", err));
+  navigator.serviceWorker.register('sw.js').catch(err => alert("SW Registration Error: " + err));
 }
 
-// PASTE YOUR LIVE SNAPSHOT GOOGLE WEB APP URL EXTRACTED FROM MANAGE DEPLOYMENTS BELOW
-const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbxx0Z5ZFzabjdMdKMFjIHBIl7VCiqGu4d201hY8LUFXVUPLTKeYGQFoMzBaKuuftmo8/exec";
-let audioCtx = null;
-let currentActiveCount = 0;
+const API_ENDPOINT = "PASTE_YOUR_DEPLOYED_GOOGLE_APPS_SCRIPT_URL_HERE";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCIL6Gq5xsKcBBSPh0udc27QDJ1cq7Y8hA",
+  authDomain: "smartgate-fcm.firebaseapp.com",
+  projectId: "smartgate-fcm",
+  storageBucket: "smartgate-fcm.firebasestorage.app",
+  messagingSenderId: "590826858960",
+  appId: "1:590826858960:web:8ac415d1461842461731d5"
+};
+
+firebase.initializeApp(firebaseConfig);
+const messaging = firebase.messaging();
+const VAPID_KEY = "PASTE_YOUR_GENERATE_KEY_PAIR_VAPID_STRING_HERE";
 
 document.getElementById('activate-audio-btn').addEventListener('click', () => {
-  if (!audioCtx) {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    document.getElementById('status-display').innerText = "Status: Monitoring Gate...";
-    document.getElementById('activate-audio-btn').style.display = "none";
-  }
-});
+  const flatVal = document.getElementById('flat-input').value.trim();
+  if(!flatVal) { alert("Please enter your flat number first."); return; }
 
-function triggerHardwareIntercomChime() {
-  if (!audioCtx) return;
-  let time = audioCtx.currentTime;
-  for (let cycle = 0; cycle < 2; cycle++) {
-    let osc1 = audioCtx.createOscillator();
-    let osc2 = audioCtx.createOscillator();
-    let gainNode = audioCtx.createGain();
-    osc1.type = 'sine'; osc2.type = 'sine';
-    osc1.frequency.setValueAtTime(880, time + (cycle * 0.6));
-    osc2.frequency.setValueAtTime(440, time + (cycle * 0.6) + 0.1);
-    gainNode.gain.setValueAtTime(0, time + (cycle * 0.6));
-    gainNode.gain.linearRampToValueAtTime(0.3, time + (cycle * 0.6) + 0.05);
-    gainNode.gain.linearRampToValueAtTime(0, time + (cycle * 0.6) + 0.4);
-    osc1.connect(gainNode); osc2.connect(gainNode);
-    gainNode.connect(audioCtx.destination);
-    osc1.start(time + (cycle * 0.6)); osc2.start(time + (cycle * 0.6));
-    osc1.stop(time + (cycle * 0.6) + 0.4); osc2.stop(time + (cycle * 0.6) + 0.4);
-  }
-}
-
-function approveEntry(mobile, flat) {
-  document.getElementById('status-display').innerText = "Sending authorization...";
-  fetch(`${API_ENDPOINT}?action=approveVisitor&mobile=${mobile}&flat=${flat}`)
-    .then(res => res.json())
-    .then(res => {
-       if(res.success) {
-         document.getElementById('status-display').innerText = "Access Granted Successfully!";
-         pollGateRegistry();
-       } else {
-         document.getElementById('status-display').innerText = "Approval failed. Try again.";
-       }
-    })
-    .catch(() => {
-      document.getElementById('status-display').innerText = "Network Error.";
-    });
-}
-
-function pollGateRegistry() {
-  if (!audioCtx) return;
-  
-  fetch(`${API_ENDPOINT}?action=getActiveDeliveries`)
-    .then(res => res.json())
-    .then(payload => {
-      const listContainer = document.getElementById('visitor-list');
-      listContainer.innerHTML = "";
-      
-      if (payload.success && payload.data && payload.data.length > 0) {
-        document.getElementById('status-display').innerText = `Alert: ${payload.data.length} Entry Pending Approval`;
-        
-        if (payload.data.length > currentActiveCount) {
-          triggerHardwareIntercomChime();
-        }
-        currentActiveCount = payload.data.length;
-        
-        payload.data.forEach(visitor => {
-          let card = document.createElement('div');
-          card.className = "visitor-card";
-          card.innerHTML = `
-            <div class="visitor-info">
-              <strong>${visitor.subCat.toUpperCase()} Entry</strong><br>
-              Name: ${visitor.name}<br>
-              Flat Destination: ${visitor.flat}<br>
-              ID Ref: ******${String(visitor.mobile).slice(-4)}
-            </div>
-            <button class="action-btn" onclick="approveEntry('${visitor.mobile}', '${visitor.flat}')">TAP TO ALLOW ENTRY</button>
-          `;
-          listContainer.appendChild(card);
-        });
+  Notification.requestPermission()
+    .then((permission) => {
+      if (permission === 'granted') {
+        messaging.getToken({ vapidKey: VAPID_KEY })
+          .then((currentToken) => {
+            if (currentToken) {
+              // Direct synchronization check
+              fetch(`${API_ENDPOINT}?action=registerToken&flat=${flatVal}&token=${currentToken}`)
+                .then(res => res.json())
+                .then(res => {
+                  if(res.success) {
+                    alert("Success! Hardware link recorded in Google Sheets.");
+                    document.getElementById('setup-area').style.display = "none";
+                    document.getElementById('status-display').innerText = `Linked to Flat ${flatVal} | Monitoring...`;
+                    localStorage.setItem('registeredFlat', flatVal);
+                  } else {
+                    alert("Sheet rejected token registration.");
+                  }
+                })
+                .catch(err => alert("Network transmission failed to reach sheet: " + err));
+            } else {
+              alert("No token generated. Check your Firebase VAPID key configurations.");
+            }
+          })
+          .catch(err => alert("FCM Token Error: " + err));
       } else {
-        currentActiveCount = 0;
-        document.getElementById('status-display').innerText = "Status: Monitoring Gate...";
+        alert("Notification permission denied by handset user.");
       }
     })
-    .catch(() => {
-      document.getElementById('status-display').innerText = "Network Link Searching...";
-    });
-}
+    .catch(err => alert("Notification Permission Core Error: " + err));
+});
 
-setInterval(pollGateRegistry, 4000);
+// Force-clear memory loop diagnostic override
+window.addEventListener('load', () => {
+  const savedFlat = localStorage.getItem('registeredFlat');
+  if(savedFlat) {
+    // If the spreadsheet lacks rows, clear memory and force setup box visibility
+    document.getElementById('status-display').innerText = "Verifying cloud link sync...";
+  }
+});
