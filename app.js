@@ -9,7 +9,7 @@ if ('serviceWorker' in navigator) {
     .catch(err => alert("SW Registration Error: " + err));
 }
 
-const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbyjLjeK1OeNmJilpJ2Xj58rVFOSTrTP_0BvCUtZulYG8yqlYpgA9iefKPXLm4pfKQ0E/exec";
+const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbydgHUFWgnp_gvWutD5myB0W2feNf-dWi8fmVF84h4XgRSITWKO_gMGcMARNhMT7yH2/exec";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCIL6Gq5xsKcBBSPh0udc27QDJ1cq7Y8hA",
