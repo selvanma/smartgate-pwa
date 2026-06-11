@@ -1,5 +1,12 @@
+// Global placeholder to store our local subfolder service worker registration
+let nativeSwRegistration = null;
+
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('sw.js').catch(err => alert("SW Registration Error: " + err));
+  navigator.serviceWorker.register('sw.js')
+    .then(registration => {
+      nativeSwRegistration = registration;
+    })
+    .catch(err => alert("SW Registration Error: " + err));
 }
 
 const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbyJGD_K9ot7Nn2Y1bgNNghoE0vLB6rMX30-sA5RBq1wHOJ9AtLpSFjbL-bCb6WvGK09/exec";
@@ -15,37 +22,41 @@ const firebaseConfig = {
 
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
-const VAPID_KEY = "PASTE_YOUR_GENERATE_KEY_PAIR_VAPID_STRING_HERE";
+const VAPID_KEY = "BEQ4Iq4So0e1u87KTHWLEMC2xIF0DJgT7Z3o6OnoXLFe6vRkB88r0ol3V1IwFKZ94iXtRpFr_d9CaXFDRG2Rt0Q";
 
 document.getElementById('activate-audio-btn').addEventListener('click', () => {
   const flatVal = document.getElementById('flat-input').value.trim();
   if(!flatVal) { alert("Please enter your flat number first."); return; }
+  if(!nativeSwRegistration) { alert("System initializing background services. Please tap again in 2 seconds."); return; }
 
   Notification.requestPermission()
     .then((permission) => {
       if (permission === 'granted') {
-        messaging.getToken({ vapidKey: VAPID_KEY })
-          .then((currentToken) => {
-            if (currentToken) {
-              // Direct synchronization check
-              fetch(`${API_ENDPOINT}?action=registerToken&flat=${flatVal}&token=${currentToken}`)
-                .then(res => res.json())
-                .then(res => {
-                  if(res.success) {
-                    alert("Success! Hardware link recorded in Google Sheets.");
-                    document.getElementById('setup-area').style.display = "none";
-                    document.getElementById('status-display').innerText = `Linked to Flat ${flatVal} | Monitoring...`;
-                    localStorage.setItem('registeredFlat', flatVal);
-                  } else {
-                    alert("Sheet rejected token registration.");
-                  }
-                })
-                .catch(err => alert("Network transmission failed to reach sheet: " + err));
-            } else {
-              alert("No token generated. Check your Firebase VAPID key configurations.");
-            }
-          })
-          .catch(err => alert("FCM Token Error: " + err));
+        // CRITICAL FIX: Forces Firebase to use our subfolder sw.js instead of looking at the root domain
+        messaging.getToken({ 
+          serviceWorkerRegistration: nativeSwRegistration, 
+          vapidKey: VAPID_KEY 
+        })
+        .then((currentToken) => {
+          if (currentToken) {
+            fetch(`${API_ENDPOINT}?action=registerToken&flat=${flatVal}&token=${currentToken}`)
+              .then(res => res.json())
+              .then(res => {
+                if(res.success) {
+                  alert("Success! Hardware link recorded in Google Sheets.");
+                  document.getElementById('setup-area').style.display = "none";
+                  document.getElementById('status-display').innerText = `Linked to Flat ${flatVal} | Monitoring...`;
+                  localStorage.setItem('registeredFlat', flatVal);
+                } else {
+                  alert("Sheet rejected token registration.");
+                }
+              })
+              .catch(err => alert("Network transmission failed to reach sheet: " + err));
+          } else {
+            alert("No token generated. Check your Firebase VAPID key configurations.");
+          }
+        })
+        .catch(err => alert("FCM Token Error: " + err));
       } else {
         alert("Notification permission denied by handset user.");
       }
@@ -53,11 +64,10 @@ document.getElementById('activate-audio-btn').addEventListener('click', () => {
     .catch(err => alert("Notification Permission Core Error: " + err));
 });
 
-// Force-clear memory loop diagnostic override
 window.addEventListener('load', () => {
   const savedFlat = localStorage.getItem('registeredFlat');
   if(savedFlat) {
-    // If the spreadsheet lacks rows, clear memory and force setup box visibility
-    document.getElementById('status-display').innerText = "Verifying cloud link sync...";
+    document.getElementById('setup-area').style.display = "none";
+    document.getElementById('status-display').innerText = `Linked to Flat ${savedFlat} | Monitoring...`;
   }
 });
