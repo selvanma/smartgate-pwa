@@ -2,7 +2,7 @@ if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('sw.js').catch(err => alert("SW Registration Error: " + err));
 }
 
-const API_ENDPOINT = "PASTE_YOUR_DEPLOYED_GOOGLE_APPS_SCRIPT_URL_HERE";
+const API_ENDPOINT = "https://script.google.com/macros/s/AKfycbyJGD_K9ot7Nn2Y1bgNNghoE0vLB6rMX30-sA5RBq1wHOJ9AtLpSFjbL-bCb6WvGK09/exec";
 
 const firebaseConfig = {
   apiKey: "AIzaSyCIL6Gq5xsKcBBSPh0udc27QDJ1cq7Y8hA",
